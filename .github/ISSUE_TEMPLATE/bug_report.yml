@@ -1,0 +1,89 @@
+name: Bug report
+description: Something is broken in one of the apps
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. Two quick notes before you fill this in:
+
+        - **Security vulnerabilities do not go here.** See
+          [SECURITY.md](https://github.com/twe-cloud/hapo-ndani/blob/main/SECURITY.md) and report privately.
+        - **Do not paste journal, memory, chat content, or file paths that
+          identify you.** We do not want your private data and this issue is
+          public. Redact freely — "my notes folder" is enough.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS
+        - iOS
+        - Android
+        - Windows
+        - Linux
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version
+      placeholder: "macOS 15.3 / iOS 18.2 / Android 15 / Windows 11 23H2 / Fedora 41"
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: For Android and iOS, the exact model and its RAM matters a lot.
+      placeholder: "Pixel 8, 8 GB / MacBook Air M2, 16 GB"
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: App version or commit
+      placeholder: "0.4.0, or the commit SHA you built"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the app
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model file in use
+      description: Filename and quantisation, if the bug involves chat or model loading.
+      placeholder: "gemma-3n-E2B-it-int4.litertlm / Qwen3-4B-Q4_K_M.gguf / none"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, stack trace, or crash report
+      description: Redact anything identifying first.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this is not a duplicate
+          required: true
+        - label: This is not a security vulnerability
+          required: true
+        - label: I have removed private data and identifying paths from this report
+          required: true
+        - label: If this is an Android inference bug, I tested on a physical device (the emulator is known-unsupported)

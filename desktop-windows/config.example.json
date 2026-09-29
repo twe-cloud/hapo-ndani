@@ -1,0 +1,4 @@
+{
+  "_comment": "Copy to config.json to enable the optional rail features (the offers marketplace and payouts). Leave it absent for a fully local build \u2014 the app is free and needs no rail. config.json is gitignored.",
+  "backendBaseURL": "https://api.example.com"
+}

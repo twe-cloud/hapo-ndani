@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ndani Desktop</title>
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <span class="dot"></span>
+    <span>Ndani</span>
+  </div>
+  <ul class="sidebar-nav">
+    <li><a href="#" data-page="overview" class="active"><span class="icon">&#9678;</span> Overview</a></li>
+    <li><a href="#" data-page="models"><span class="icon">&#9881;</span> Models</a></li>
+    <li><a href="#" data-page="offers"><span class="icon">&#9733;</span> Data Offers</a></li>
+    <li><a href="#" data-page="folders"><span class="icon">&#128193;</span> Folders</a></li>
+    <li><a href="#" data-page="settings"><span class="icon">&#9881;</span> Settings</a></li>
+  </ul>
+  <div class="sidebar-footer">
+    Ndani v0.2.0<br>
+    Private AI for your PC
+  </div>
+</aside>
+
+<!-- ── Main content ─────────────────────────────────────────── -->
+<div class="main">
+  <header class="topbar">
+    <span class="topbar-title" id="topbar-title">Overview</span>
+    <div class="topbar-actions">
+      <button class="btn btn-sm" onclick="ndani.shell.open('https://nibiashara.biz/ndani/')">Website</button>
+      <button class="btn btn-sm" onclick="ndani.shell.open('mailto:admin@nibiashara.biz')">Support</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ══════ Overview Page ══════ -->
+    <div class="page active" id="page-overview">
+      <div class="grid-4 mb-24" id="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon teal">&#9670;</div>
+          <div class="card-title">Models Ready</div>
+          <div class="card-value" id="stat-models">--</div>
+          <div class="card-sub">of <span id="stat-models-total">--</span> available</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">&#9733;</div>
+          <div class="card-title">Data Earnings</div>
+          <div class="card-value" id="stat-earnings">$0.00</div>
+          <div class="card-sub">lifetime earnings</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">&#128193;</div>
+          <div class="card-title">Folders</div>
+          <div class="card-value" id="stat-folders">--</div>
+          <div class="card-sub">approved folders</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon amber">&#128203;</div>
+          <div class="card-title">Read Ledger</div>
+          <div class="card-value" id="stat-ledger">--</div>
+          <div class="card-sub">logged reads</div>
+        </div>
+      </div>
+
+      <div class="grid-2 gap-24">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">System Info</span>
+          </div>
+          <div id="system-info" style="font-size:0.88rem; color:var(--text-2); line-height:2;">Loading...</div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Available Offers</span>
+            <button class="btn btn-sm btn-purple" onclick="navigate('offers')">Browse All</button>
+          </div>
+          <div id="overview-offers">Loading...</div>
+        </div>
+      </div>
+
+      <div class="card mt-24">
+        <div class="card-header">
+          <span class="card-title">Recent Activity</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Time</th><th>File</th><th>Folder</th><th>Status</th></tr></thead>
+            <tbody id="recent-activity"><tr><td colspan="4" style="color:var(--text-3)">No reads yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="privacy-notice mt-24">
+        <strong>Privacy:</strong> Everything on this screen is computed locally on your PC. No data is sent to any server unless you explicitly submit a data offer. The read ledger proves what Ndani accessed — nothing leaves this machine by default.
+      </div>
+    </div>
+
+    <!-- ══════ Models Page ══════ -->
+    <div class="page" id="page-models">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Local Models</div>
+          <div class="section-sub">Download and manage AI models that run privately on your PC</div>
+        </div>
+        <button class="btn btn-sm" onclick="detectModels()">Refresh</button>
+      </div>
+
+      <div class="privacy-notice mb-24">
+        <strong>No token meter.</strong> These models run entirely on your machine. There is no per-use fee, no API key, and no cloud inference. Your prompts never leave your PC.
+      </div>
+
+      <div class="grid-2 gap-24" id="models-grid">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+
+    <!-- ══════ Data Offers Page ══════ -->
+    <div class="page" id="page-offers">
+      <div class="grid-3 gap-24 mb-24">
+        <div class="earnings-card" style="grid-column: span 2;">
+          <div class="earnings-label">Your Total Earnings</div>
+          <div class="earnings-value" id="total-earnings">$0.00</div>
+          <div class="earnings-sub"><span id="total-offers-count">0</span> offers completed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon teal">&#9670;</div>
+          <div class="card-title">Available Balance</div>
+          <div class="card-value" id="available-balance">$0.00</div>
+          <button class="btn btn-sm btn-primary mt-16" id="payout-btn" onclick="requestPayout()" style="display:none">Request Payout</button>
+          <div class="card-sub mt-16" id="payout-min-notice">Minimum $10.00 to withdraw</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div>
+          <div class="section-title">Available Offers</div>
+          <div class="section-sub">Buyers pay you for a summary you write yourself and choose to send. Only that text is sent — never your files, and never automatically. A submission is linked to your participant id, so it is not anonymous.</div>
+        </div>
+        <button class="btn btn-sm" onclick="loadOffers()">Refresh</button>
+      </div>
+
+      <div id="offers-list" class="grid-2 gap-24 mb-24">
+        <!-- Filled by JS -->
+      </div>
+
+      <!-- Submit Offer Form -->
+      <div class="card mt-24" id="offer-submit-section" style="display:none;">
+        <div class="card-header">
+          <span class="card-title">Submit Your Data Offer</span>
+          <button class="btn btn-sm btn-ghost" onclick="closeOfferForm()">Cancel</button>
+        </div>
+
+        <div id="selected-offer-info" class="mb-16" style="font-size:0.9rem; color:var(--text-2);"></div>
+
+        <div class="form-group">
+          <label class="form-label">What are you sharing?</label>
+          <input class="form-input" id="offer-title" placeholder="e.g. My morning work routine patterns" maxlength="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Your summary (you write this — nothing is pulled from your PC)</label>
+          <textarea class="form-textarea" id="offer-summary" placeholder="Describe your patterns in your own words. Only what you type here is stored. Max 1200 characters." maxlength="1200"></textarea>
+          <div style="font-size:0.75rem; color:var(--text-3); margin-top:4px;">
+            <span id="summary-count">0</span>/1200 characters
+          </div>
+        </div>
+
+        <div class="privacy-notice mb-16">
+          <strong>Your control:</strong> Only the text you type above will be submitted. Ndani does NOT read your files, browsing history, or any local data to fill this in. You decide exactly what to share.
+        </div>
+
+        <button class="btn btn-primary" onclick="submitOffer()">Submit Offer</button>
+      </div>
+
+      <!-- Offer History -->
+      <div class="card mt-24">
+        <div class="card-header">
+          <span class="card-title">Your Offer History</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Type</th><th>Title</th><th>Payout</th><th>Status</th></tr></thead>
+            <tbody id="offer-history"><tr><td colspan="5" style="color:var(--text-3)">No offers yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ Folders Page ══════ -->
+    <div class="page" id="page-folders">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Approved Folders</div>
+          <div class="section-sub">Ndani can only read files in folders you explicitly approve</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addFolder()">Add Folder</button>
+      </div>
+
+      <div class="privacy-notice mb-24">
+        <strong>Permission boundary:</strong> Ndani never scans your entire drive. It can only see inside folders you approve here. You can revoke access at any time. Every file read is logged in the read ledger.
+      </div>
+
+      <div id="folders-list">
+        <!-- Filled by JS -->
+      </div>
+
+      <div class="card mt-24">
+        <div class="card-header">
+          <span class="card-title">Read Ledger</span>
+          <span class="card-title" style="font-weight:400; text-transform:none;">What Ndani read and when</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Time</th><th>File</th><th>Folder</th><th>Preview Length</th><th>Sent?</th></tr></thead>
+            <tbody id="ledger-table"><tr><td colspan="5" style="color:var(--text-3)">No reads yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ Settings Page ══════ -->
+    <div class="page" id="page-settings">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Settings</div>
+          <div class="section-sub">Participant ID, updates, and payout configuration</div>
+        </div>
+      </div>
+
+      <div class="grid-2 gap-24">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Participant ID</span></div>
+          <div id="participant-status" style="margin-bottom:16px; font-size:0.9rem; color:var(--text-2);">Not set. The app is free — this is only needed if you use a rail that pays you.</div>
+          <div class="form-group">
+            <label class="form-label">Participant ID</label>
+            <input class="form-input" id="participant-id" placeholder="Issued by your rail, if you use one">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Signature</label>
+            <input class="form-input" id="participant-sig" placeholder="Signature, if your rail issues one">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveParticipantID()">Save</button>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Payout Setup</span></div>
+          <div style="font-size:0.88rem; color:var(--text-2); margin-bottom:16px; line-height:1.6;">
+            Connect your Stripe account to receive payouts from data offers. Earnings accumulate until you reach the $10.00 minimum, then you can withdraw.
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payout Email</label>
+            <input class="form-input" id="payout-email" placeholder="your@email.com">
+          </div>
+          <div id="stripe-connect-status" style="font-size:0.85rem; color:var(--text-3); margin-bottom:12px;">
+            Stripe Connect not linked yet
+          </div>
+          <button class="btn btn-purple btn-sm" onclick="setupStripeConnect()">Connect Stripe</button>
+        </div>
+      </div>
+
+      <div class="card mt-24">
+        <div class="card-header"><span class="card-title">About</span></div>
+        <div style="font-size:0.88rem; color:var(--text-2); line-height:1.8;">
+          <strong>Ndani Desktop</strong> v0.2.0<br>
+          Private AI that runs on your PC. Your files, memory, and model choices stay on your machine.<br>
+          Built by <strong>Ni Biashara LLC</strong> &mdash; Dallas, TX<br><br>
+          <a href="#" onclick="ndani.shell.open('https://nibiashara.biz/ndani/privacy.html')" style="color:var(--teal)">Privacy Policy</a>
+          &nbsp;&middot;&nbsp;
+          <a href="#" onclick="ndani.shell.open('mailto:admin@nibiashara.biz')" style="color:var(--teal)">Support</a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<div id="toast-container"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

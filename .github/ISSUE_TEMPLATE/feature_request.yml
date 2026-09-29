@@ -1,0 +1,52 @@
+name: Feature request
+description: Suggest something the apps should do
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please read the short "one non-negotiable" section of
+        [CONTRIBUTING.md](https://github.com/twe-cloud/hapo-ndani/blob/main/CONTRIBUTING.md) first — local code paths
+        stay local, so anything requiring a network call in chat, journal, memory
+        or model loading will be declined however good the idea is.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve
+      description: Describe the situation you are actually in, not the feature. It helps us find a better solution than the one you had in mind.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like it to do
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Which platforms
+      multiple: true
+      options:
+        - macOS
+        - iOS
+        - Android
+        - Windows
+        - Linux
+        - All of them
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you tried or considered instead
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: This works with the machine offline, and adds no telemetry, analytics, or hosted inference to a local code path
+          required: true
+        - label: I searched existing issues and discussions
+          required: true
+        - label: I would be willing to work on this

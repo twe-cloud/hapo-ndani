@@ -1,0 +1,30 @@
+appId: biz.nibiashara.ndani.desktop
+productName: Ndani Desktop
+copyright: Ni Biashara LLC
+
+directories:
+  output: dist
+
+files:
+  - main.js
+  - preload.js
+  - src/**/*
+
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+  icon: assets/icon.png
+  artifactName: "NdaniDesktop-${version}-${arch}.${ext}"
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  icon: assets/icon.png
+  category: Utility

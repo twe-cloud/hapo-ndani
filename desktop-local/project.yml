@@ -1,0 +1,136 @@
+name: NdaniDesktop
+options:
+  createIntermediateGroups: true
+# Signing is contributor-supplied. See Signing.xcconfig.
+configFiles:
+  Debug: Signing.xcconfig
+  Release: Signing.xcconfig
+packages:
+  AppCore:
+    path: Packages/AppCore
+  AppDocuments:
+    path: Packages/AppDocuments
+  AppUI:
+    path: Packages/AppUI
+  AppIntegrations:
+    path: Packages/AppIntegrations
+  AppTesting:
+    path: Packages/AppTesting
+  AppInference:
+    path: Packages/AppInference
+targets:
+  NdaniDesktop:
+    type: application
+    platform: macOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: App
+        excludes:
+          - NdaniMobileApp.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: biz.nibiashara.ndani.desktop
+        PRODUCT_NAME: Hapo Ndani
+        PRODUCT_MODULE_NAME: NdaniDesktop
+        MARKETING_VERSION: 0.4.0
+        CURRENT_PROJECT_VERSION: 7
+        SWIFT_VERSION: 6.0
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_ENTITLEMENTS: App/NdaniDesktop.entitlements
+        ENABLE_HARDENED_RUNTIME: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_CFBundleDisplayName: Hapo Ndani
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.business
+    dependencies:
+      - package: AppCore
+      - package: AppDocuments
+      - package: AppUI
+      - package: AppIntegrations
+      - package: AppTesting
+      - package: AppInference
+    scheme:
+      testTargets:
+        - NdaniDesktopTests
+  NdaniMobile:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: App
+        includes:
+          - NdaniMobileApp.swift
+          - Assets.xcassets
+          - PrivacyInfo.xcprivacy
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: biz.nibiashara.ndani.desktop
+        PRODUCT_NAME: Hapo Ndani
+        PRODUCT_MODULE_NAME: NdaniMobile
+        MARKETING_VERSION: 0.5.0
+        CURRENT_PROJECT_VERSION: 4
+        SWIFT_VERSION: 6.0
+        GENERATE_INFOPLIST_FILE: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_CFBundleDisplayName: Hapo Ndani
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        TARGETED_DEVICE_FAMILY: "1,2"
+    dependencies:
+      - package: AppCore
+      - package: AppUI
+      - package: AppInference
+    scheme:
+      testTargets:
+        - NdaniMobileTests
+        - NdaniMobileUITests
+  NdaniMobileTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: AppTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: biz.nibiashara.hapondani.ios.tests
+        PRODUCT_NAME: Ndani Mobile Tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: 6.0
+        CODE_SIGNING_ALLOWED: NO
+    dependencies:
+      - package: AppCore
+      - package: AppUI
+  NdaniMobileUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: AppUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: biz.nibiashara.hapondani.ios.uitests
+        PRODUCT_NAME: Ndani Mobile UI Tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: 6.0
+        CODE_SIGNING_ALLOWED: NO
+        TEST_TARGET_NAME: NdaniMobile
+    dependencies:
+      - target: NdaniMobile
+  NdaniDesktopTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: AppTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: biz.nibiashara.ndani.desktop.tests
+        PRODUCT_NAME: Ndani Desktop Tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: 6.0
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+    dependencies:
+      - package: AppCore
+      - package: AppDocuments

@@ -1,0 +1,17 @@
+{
+  "name": "ndani-desktop",
+  "version": "0.2.0",
+  "description": "Hapo Ndani for Windows and Linux \u2014 private, local AI. Your models, your data, your machine.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux"
+  },
+  "author": "Ni Biashara LLC",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

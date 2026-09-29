@@ -1,0 +1,46 @@
+Hapo Ndani
+Copyright 2026 Ni Biashara LLC
+
+This product includes software developed at Ni Biashara LLC
+(https://nibiashara.biz).
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+--------------------------------------------------------------------------------
+Third-party components
+--------------------------------------------------------------------------------
+
+The apps in this repository depend on, but do not redistribute, the following.
+Each carries its own licence, which applies to you when you fetch it.
+
+* llama.swift (https://github.com/mattt/llama.swift) — fetched by Swift Package
+  Manager for the Apple targets.
+* LiteRT-LM for Android (com.google.ai.edge.litertlm) — fetched by Gradle for
+  the Android target.
+* Electron and electron-builder — fetched by npm for the Windows/Linux target.
+* Portions of the Android module structure and Gradle configuration derive from
+  the Android Open Source Project, Apache License 2.0. Those files keep their
+  original AOSP copyright headers.
+
+--------------------------------------------------------------------------------
+Model weights
+--------------------------------------------------------------------------------
+
+No model weights are included in this repository, and none are redistributed by
+it. The apps can fetch models on your instruction from URLs pinned in the source,
+or load ones you supply yourself. Those weights are licensed by
+their own publishers, and it is on you to read and accept those terms:
+
+* Gemma models are governed by the Google Gemma Terms of Use and the Gemma
+  Prohibited Use Policy. They are NOT Apache-2.0, are not redistributable under
+  this repository's licence, and their terms must be passed downstream.
+* Meta Llama models, including the Hermes 3 fine-tune of Llama 3.1, are
+  governed by the Llama 3.1 Community License and Meta's Acceptable Use Policy.
+  That licence requires attribution — "Built with Llama" — from anyone who
+  distributes a product using them, requires that the licence notice itself be
+  included, and imposes additional conditions above 700 million monthly active
+  users.
+* Qwen3 models are Apache-2.0.
+
+Nothing in this repository grants you any rights to any model weights. See
+MODELS.md for the full table and what each licence requires of you.

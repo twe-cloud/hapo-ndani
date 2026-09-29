@@ -1,0 +1,26 @@
+// Hapo Ndani — code signing for the macOS and iOS targets.
+//
+// Building and running locally needs no signing at all; the default below keeps
+// signing off so `xcodebuild` works on a fresh clone with no Apple account.
+//
+// To run on a device or distribute your own build, put your Apple Developer
+// Team ID in a file named Signing.local.xcconfig next to this one — it is
+// gitignored, so your Team ID never ends up in a commit:
+//
+//     NDANI_DEVELOPMENT_TEAM = ABCDE12345
+//     CODE_SIGNING_REQUIRED  = YES
+//     CODE_SIGNING_ALLOWED   = YES
+//     CODE_SIGN_STYLE        = Automatic
+//     CODE_SIGN_IDENTITY     = Apple Development
+//
+// Defaults first, then the optional local override wins.
+
+NDANI_DEVELOPMENT_TEAM =
+CODE_SIGN_STYLE = Automatic
+CODE_SIGNING_REQUIRED = NO
+CODE_SIGNING_ALLOWED = NO
+CODE_SIGN_IDENTITY =
+
+#include? "Signing.local.xcconfig"
+
+DEVELOPMENT_TEAM = $(NDANI_DEVELOPMENT_TEAM)
