@@ -112,3 +112,7 @@ Thumbs.db
 __pycache__/
 *.pyc
 .venv/
+
+# Local-only operator context - never publish
+AGENTS.md
+STATUS.md
