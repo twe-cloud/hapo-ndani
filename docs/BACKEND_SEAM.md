@@ -112,7 +112,8 @@ verify anybody. If you set it true, be prepared to say what you checked.
 **`POST /api/offers/submit`**
 
 ```json
-{ "participant_id": "string", "offer_id": "string", "data_type": "string",
+{ "participant": "base64url ed25519 public key", "offer_id": "string",
+  "data_type": "string",
   "title": "string", "summary": "string" }
 ```
 
@@ -158,35 +159,78 @@ manifest expecting polling.
 ## Participant identity
 
 **The app is free.** There is no licence, no activation and no purchase. That
-removes what the earlier protocol used to identify a participant, so the
-replacement is stated here rather than left as a hole.
+removed what the earlier protocol used to identify a participant, and the
+replacement is a deliberate design choice rather than a rename.
 
-A rail needs some stable handle to attribute a payout to the person who earned
-it. This protocol calls it a **`participant_id`** and defines only its
-contract, not how you mint it:
+**The client generates a keypair locally. The public key is the identity. The
+rail issues nothing.**
 
-- It is an **opaque string** issued by the rail. The client never parses it,
-  derives anything from it, or assumes a format.
-- An optional **`signature`** accompanies it, also opaque and passed straight
-  through. The client performs no cryptography.
-- It is **stored locally** and sent only on submission, history and balance
-  calls. It never accompanies anything local.
-- It **grants nothing.** It does not unlock the app, gate a feature, or expire
-  into a paywall. A build with no `participant_id` is fully functional — it
-  simply cannot be paid.
+### The contract
 
-Issuance, rotation and revocation are entirely yours.
+- On first use of a rail feature, the client generates an **Ed25519 keypair**
+  and stores the private key in the platform keystore (Keychain on Apple
+  platforms, the OS credential store elsewhere). It never leaves the device
+  and is never transmitted.
+- The **public key**, base64url-encoded, is the `participant` value on every
+  rail call. The rail treats it as an opaque account handle.
+- Every submission carries a **detached signature** over a canonical
+  serialization of the payload, including a timestamp and a single-use nonce
+  so a captured submission cannot be replayed.
+- The rail **verifies the signature against the public key it was given**. It
+  issues no credential, so there is no credential for it to revoke, correlate
+  across products, or leak.
+- Rotation is the participant generating a new keypair. The rail treats that
+  as a new account, because from its side it is one.
 
-> **Open design question, flagged rather than quietly decided.** Having the
-> rail *issue* the identifier lets the rail correlate a participant across
-> every submission, which is a lot of linkage for a consent product. The
-> stronger design is for the client to generate a keypair locally and sign
-> submissions, making the public key the identity — the rail then issues
-> nothing and learns nothing it was not handed. That is a protocol change
-> rather than a rename, so it is not in this spec. If you are building a rail
-> from scratch, consider it before you copy this one.
+### What this does and does not buy
 
-## Local primitives, for reference
+It buys a real property: **a rail cannot link a participant to anything it was
+not handed.** There is no issued identifier tying submissions to a purchase, a
+device, an email, or an account the rail created. It also removes a whole class
+of failure — there is no credential database to breach.
+
+It does **not** buy anonymity, and this spec will not imply that it does:
+
+- A rail sees every submission made under one public key, so submissions are
+  **linkable to each other**. That is unavoidable if a balance is to accrue.
+- A person writing a summary about their own habits can **identify themselves
+  in the text**, whatever the protocol does.
+- **Payout requires identity.** Money moves through a payment processor, and
+  that processor performs KYC. The moment a participant withdraws, a real
+  legal identity attaches to that public key.
+
+So the line is drawn deliberately, and it is worth stating to a participant in
+plain words: **the rail learns who you are when you take money out, not when
+you submit.** Submission is pseudonymous; withdrawal is not, and it cannot be.
+A rail that claims otherwise is either not paying people or not telling the
+truth.
+
+### Sybil resistance moved, and you must notice
+
+Under the old paid model, fabricating a participant cost the price of a
+licence. **The app is free now, so generating a keypair costs nothing** — a
+public key is not a scarce resource, and nothing stops one person minting
+thousands.
+
+The scarcity moved to the payout leg: a payment processor's KYC'd account is
+the thing that is hard to duplicate. A rail must therefore treat **the payout
+account, not the public key, as the unit of uniqueness** for anything that
+depends on one-person-one-submission — per-person caps, duplicate detection,
+fraud limits. Enforcing a cap per public key enforces nothing at all.
+
+### Reference client status
+
+The clients in this repository **do not implement signing yet.** They send a
+`participant` value and pass a `signature` field straight through without
+generating or verifying anything. The keypair scheme above is the specified
+target and the field shapes already match it; the cryptography is the gap.
+
+Being precise about that, because it matters to anyone building against this:
+**a rail must not treat the current clients' `signature` field as
+authenticated.** It carries whatever the client was given. Implementing
+Ed25519 generation, storage and signing is a welcome contribution.
+
+## Local primitives, for reference## Local primitives, for reference
 
 Not endpoints. These are in this repository and are what the rail is consenting
 *against*.

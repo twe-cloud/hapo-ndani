@@ -825,7 +825,7 @@ public final class NdaniDesktopState {
         vaultLastResult = nil
 
         let payload: [String: Any] = [
-            "participant_id": vaultParticipantID,
+            "participant": vaultParticipantID,
             "data_type": vaultSelectedType.rawValue,
             "title": vaultTitle,
             "summary": vaultSummary
@@ -1530,7 +1530,7 @@ public final class NdaniMarketplace {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let body: [String: Any] = [
-            "participant_id": participantID,
+            "participant": participantID,
             "offer_id": offerID,
             "data_type": dataType,
             "title": title,

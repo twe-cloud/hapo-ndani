@@ -310,7 +310,7 @@ async function submitOffer() {
   const result = await ndani.api.fetch('/api/offers/submit', {
     method: 'POST',
     body: {
-      participant_id: participant.participant_id,
+      participant: participant.participant_id,
       offer_id: selectedOfferId,
       data_type: offer.dataType,
       title: title,
@@ -323,7 +323,7 @@ async function submitOffer() {
     const legacyResult = await ndani.api.fetch('/api/vault/offer', {
       method: 'POST',
       body: {
-        participant_id: participant.participant_id,
+        participant: participant.participant_id,
         data_type: offer.dataType,
         title: title,
         summary: summary,

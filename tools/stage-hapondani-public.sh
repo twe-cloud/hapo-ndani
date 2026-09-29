@@ -43,8 +43,8 @@ copy_tree() {
 
 # ---------- macOS + iOS (SwiftUI / XcodeGen) ----------
 # EXCLUDED: AGENTS.md (internal ops), docs/ (App Store Connect app+version+submission
-# ids, launch/PR plans), store-listings/ prose (ASC app id 6763682362, provisioning
-# profile names). Screenshots are re-homed under docs/screenshots/.
+# ids, launch/PR plans), store-listings/ prose (store record ids and named
+# provisioning profiles). Screenshots are re-homed under docs/screenshots/.
 copy_tree desktop-local desktop-local \
   --exclude 'AGENTS.md' \
   --exclude 'docs/' \
