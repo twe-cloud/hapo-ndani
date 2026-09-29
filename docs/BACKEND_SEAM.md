@@ -39,8 +39,14 @@ on offer, and moving money to the user.
   └─────────────┘
 ```
 
-Steps 1, 3 and 5 are **local and open** — they are in this repository. Steps 2
-and 4 need a rail.
+Steps 1, 3 and 5 are **local and open** — they are in this repository, and
+they work offline today.
+
+Steps 2 and 4 need a rail, and **no rail exists.** Not one we kept private —
+none at all. Nobody has been paid through this protocol, and the payout
+request is not implemented even in the reference clients. Everything below
+about offers and payment is a specification for something you would build,
+not a description of something running.
 
 ## Two invariants
 

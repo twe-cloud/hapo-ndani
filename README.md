@@ -5,11 +5,18 @@ implementation.**
 
 A person grants scoped access to their own files. They see an offer — who wants
 what, and what it pays. They decide, per offer, whether to send anything. The
-money routes to *them*. Every local read is written to an append-only ledger,
-including whether it ever left the device.
+money routes to *them*, not to a platform. Every local read is written to an
+append-only ledger, including whether it ever left the device.
 
 That sequence — **scope → offer → consent → payment → provenance** — is what
-this repository is. The apps are how it was proven on real hardware.
+this repository specifies.
+
+**Be exact about what is built.** Scope, consent and provenance are implemented
+here, and they work with the machine offline. The paying half is a
+specification with nothing behind it: there is no rail in this repository, no
+payout has ever been made, and **no participant has ever been paid.** If you
+are evaluating this, evaluate the design — there is no track record to weigh,
+and any page that implies otherwise is wrong.
 
 *Hapo ndani* is Swahili for "in there".
 
@@ -33,11 +40,11 @@ Four pieces make that work, and they are all here:
 | --- | --- |
 | **Scope** | Access is granted per folder and is revocable. On Apple platforms it uses security-scoped bookmarks, so a grant can go *stale* — and the app reports that rather than silently retrying. No scope, no read. |
 | **Consent** | Granting folder access is **not** consent to sell. Submitting to an offer is a separate, explicit act, for one offer, carrying text the person wrote themselves. The client has no field for file contents — the invariant is structural, not a promise. |
-| **Payment** | The payout shown is what the *person* receives. Balance, lifetime earnings and withdrawal eligibility are all user-visible. Because the app is free, participation is identified by an opaque `participant_id` a rail issues — it grants nothing and gates nothing. |
+| **Payment** | *Specified, not shipped.* The payout figure is defined as what the **person** receives, not a platform cut, and balance, earnings and withdrawal eligibility are defined as user-visible — but all of it renders from a rail, and no rail exists. Identity is an **Ed25519 keypair the client generates locally**: the rail issues nothing and learns nothing it was not handed. Payout is the deliberate exception, because getting paid requires KYC. |
 | **Provenance** | Every read lands in an append-only ledger with a `wasSentOffDevice` flag and the *length* of what was read, never the content. That is what makes "it stayed local" auditable instead of a marketing line. |
 
 The protocol is specified in **[docs/BACKEND_SEAM.md](docs/BACKEND_SEAM.md)** —
-seven endpoints, two invariants, and the local types they act against. It is
+six endpoints, two invariants, the keypair identity scheme, and the local types they act against. It is
 written so a third party can implement a rail against it.
 
 ## The reference client
@@ -96,7 +103,7 @@ Pull requests welcome.
 
 | | Why |
 | --- | --- |
-| The rail implementation — offers, participant issuance, payouts | It is the commercial counterparty side. The **protocol** is fully specified in `docs/BACKEND_SEAM.md`; the implementation is not open. |
+| A rail — the service that publishes offers and moves money | The commercial counterparty side. Note the honest version: this is not a finished implementation we chose to keep closed. **No rail exists.** The **protocol** is fully specified in `docs/BACKEND_SEAM.md` so you can build one; we have not. |
 | Marketing site, internal operations, release-readiness notes, store-submission records, pricing analysis, security audits | Internal business material, of no use to anyone building this. |
 | Model weights | No right to redistribute. |
 | Our signing certificate, Apple Team ID, Android upload keystore | Yours go in local files this repo ignores. |
