@@ -819,65 +819,9 @@ public final class NdaniDesktopState {
 
     @MainActor
     public func submitVaultOffer() {
-        guard !vaultParticipantID.isEmpty, !vaultTitle.isEmpty, !vaultSummary.isEmpty else { return }
-        vaultSubmitting = true
-        vaultErrorMessage = nil
+        vaultSubmitting = false
         vaultLastResult = nil
-
-        let payload: [String: Any] = [
-            "participant": vaultParticipantID,
-            "data_type": vaultSelectedType.rawValue,
-            "title": vaultTitle,
-            "summary": vaultSummary
-        ]
-
-        guard let url = NdaniBackendConfig.url("/api/vault/offer"),
-              let body = try? JSONSerialization.data(withJSONObject: payload) else {
-            vaultSubmitting = false
-            vaultErrorMessage = NdaniBackendConfig.isConfigured
-                ? "Could not build request."
-                : NdaniBackendConfig.notConfiguredMessage
-            return
-        }
-
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = body
-
-        Task { @MainActor in
-            do {
-                let (data, response) = try await URLSession.shared.data(for: req)
-                guard let http = response as? HTTPURLResponse else {
-                    self.vaultErrorMessage = "No response."
-                    self.vaultSubmitting = false
-                    return
-                }
-                guard http.statusCode == 200,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let offerID = json["offer_id"] as? String,
-                      let creditCode = json["credit_code"] as? String,
-                      let creditUSD = json["credit_amount_usd"] as? Double,
-                      let message = json["message"] as? String
-                else {
-                    let detail = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["detail"] as? String
-                    self.vaultErrorMessage = detail ?? "Offer not accepted (HTTP \(http.statusCode))."
-                    self.vaultSubmitting = false
-                    return
-                }
-                self.vaultLastResult = NdaniVaultOfferResult(
-                    offerID: offerID,
-                    creditCode: creditCode,
-                    creditAmountUSD: creditUSD,
-                    message: message
-                )
-                self.vaultTitle = ""
-                self.vaultSummary = ""
-            } catch {
-                self.vaultErrorMessage = error.localizedDescription
-            }
-            self.vaultSubmitting = false
-        }
+        vaultErrorMessage = "Unsigned legacy submissions are unavailable. Use signed per-offer consent."
     }
 
     public static func detectModels(
@@ -1462,6 +1406,7 @@ public final class NdaniMarketplace {
     public private(set) var isLoading = false
     public private(set) var lastError: String?
     public private(set) var lastSubmission: NdaniOfferSubmissionResult?
+    public private(set) var lastConsentSubmissionID: String?
 
     private let backendBase: String
 
@@ -1475,7 +1420,8 @@ public final class NdaniMarketplace {
         self.backendBase = backendBase
     }
 
-    public func fetchOffers() async {
+    public func fetchOffers(session: URLSession = .shared) async {
+        availableOffers = []
         isLoading = true
         lastError = nil
         defer { isLoading = false }
@@ -1485,15 +1431,17 @@ public final class NdaniMarketplace {
             return
         }
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let (data, response) = try await session.data(from: url)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else { throw NdaniConsentSaleError.invalidOffer }
             let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
             guard let offers = json?["offers"] as? [[String: Any]] else { return }
-            availableOffers = offers.compactMap { o in
+            availableOffers = try offers.map { raw in
+                let o = try NdaniOfferSchema.normalize(raw)
                 guard let id = o["id"] as? String,
                       let buyer = o["buyer"] as? String,
                       let title = o["title"] as? String,
                       let desc = o["description"] as? String,
-                      let payout = o["payout_usd"] as? Double else { return nil }
+                      let payout = o["payout_usd"] as? Double else { throw NdaniConsentSaleError.invalidOffer }
                 return NdaniBuyerOffer(
                     id: id, buyer: buyer,
                     buyerVerified: o["buyer_verified"] as? Bool ?? false,
@@ -1515,59 +1463,75 @@ public final class NdaniMarketplace {
         offerID: String,
         dataType: String,
         title: String,
-        summary: String
+        summary: String,
+        consentEnvelope: NdaniConsentEnvelope? = nil,
+        session: URLSession = .shared
     ) async {
         isLoading = true
         lastError = nil
         lastSubmission = nil
+        lastConsentSubmissionID = nil
         defer { isLoading = false }
 
-        guard let url = backendURL("/api/offers/submit") else {
+        guard (1...1200).contains(summary.unicodeScalars.count) else {
+            lastError = "Write a summary of 1–1200 characters."; return
+        }
+        guard let consentEnvelope, consentEnvelope.matches(participantID: participantID, offerID: offerID, summary: summary) else {
+            lastError = "A signed per-offer consent is required; sales remain unavailable."; return
+        }
+        guard let url = backendURL("/api/consent-sale/submit") else {
             lastError = NdaniBackendConfig.notConfiguredMessage
             return
         }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: Any] = [
-            "participant": participantID,
-            "offer_id": offerID,
-            "data_type": dataType,
-            "title": title,
-            "summary": summary,
-        ]
+        let body: [String: Any] = consentEnvelope.json
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         do {
-            let (data, _) = try await URLSession.shared.data(for: request)
-            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-            if let subID = json?["submission_id"] as? String {
-                lastSubmission = NdaniOfferSubmissionResult(
-                    submissionID: subID,
-                    offerID: json?["offer_id"] as? String ?? offerID,
-                    payoutUSD: json?["payout_usd"] as? Double ?? 0,
-                    message: json?["message"] as? String ?? "Accepted"
-                )
-            } else {
-                lastError = json?["detail"] as? String ?? "Submission failed"
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode),
+                  let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  Set(json.keys) == Set(["submission_id", "request_sha256", "status", "payout_status", "contributor_obligation_cents", "withdrawal_available"]),
+                  let sid = json["submission_id"] as? String, sid.count == 64,
+                  sid.allSatisfy({ "0123456789abcdef".contains($0) }),
+                  json["request_sha256"] as? String == consentEnvelope.requestSHA256,
+                  json["status"] as? String == "consented",
+                  json["payout_status"] as? String == "unverified",
+                  json["contributor_obligation_cents"] is NSNull,
+                  json["withdrawal_available"] as? Bool == false else {
+                lastError = "Submission held; no verified consent acceptance response."
+                return
             }
+            lastConsentSubmissionID = sid
+            lastError = nil
         } catch {
             lastError = error.localizedDescription
         }
     }
 
-    public func fetchBalance(participantID: String, signature: String) async {
+    public func fetchBalance(participantID: String, signature: String, session: URLSession = .shared) async {
+        balance = nil
         guard let url = backendURL("/api/balance?participant=\(participantID)&sig=\(signature)") else {
             lastError = NdaniBackendConfig.notConfiguredMessage
             return
         }
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let (data, response) = try await session.data(from: url)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else { throw NdaniConsentSaleError.invalidOffer }
             let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            guard let cash = json?["balance_usd"] as? Double, cash.isFinite, cash >= 0,
+                  let earned = json?["total_earned_usd"] as? Double, earned.isFinite, earned >= 0,
+                  let paid = json?["total_paid_out_usd"] as? Double, paid.isFinite, paid >= 0 else {
+                balance = nil
+                lastError = "Balance is unverified; missing money is not zero."
+                return
+            }
             balance = NdaniUserBalance(
-                balanceUSD: json?["balance_usd"] as? Double ?? 0,
-                totalEarnedUSD: json?["total_earned_usd"] as? Double ?? 0,
-                totalPaidOutUSD: json?["total_paid_out_usd"] as? Double ?? 0,
+                balanceUSD: cash,
+                totalEarnedUSD: earned,
+                totalPaidOutUSD: paid,
                 canWithdraw: json?["can_withdraw"] as? Bool ?? false,
                 stripeConnected: json?["stripe_connected"] as? Bool ?? false
             )
