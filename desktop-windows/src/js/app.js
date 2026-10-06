@@ -6,7 +6,7 @@ let currentPage = 'overview';
 let selectedOfferId = null;
 // Participant identity for the optional rail. Not a licence — the app is free.
 let participant = null;
-let userBalance = 0;
+let userBalance = null;
 let offerHistory = [];
 
 // ── Offers ───────────────────────────────────────────────────
@@ -83,7 +83,7 @@ async function refreshOverview() {
   document.getElementById('stat-ledger').textContent = ledger.length;
 
   // Earnings
-  document.getElementById('stat-earnings').textContent = `$${userBalance.toFixed(2)}`;
+  document.getElementById('stat-earnings').textContent = 'Unverified';
 
   // Recent activity
   renderRecentActivity(ledger);
@@ -228,7 +228,7 @@ async function loadOffers() {
       </div>
       <div class="offer-footer">
         <span style="font-size:0.78rem; color:var(--text-3);">Expires ${new Date(o.expiresAt).toLocaleDateString()}</span>
-        <button class="btn btn-primary btn-sm" onclick="acceptOffer('${o.id}')">Accept & Write</button>
+        <button class="btn btn-primary btn-sm" disabled title="Secure per-offer consent is not connected">Submission unavailable</button>
       </div>
     </div>
   `).join('');
@@ -237,36 +237,16 @@ async function loadOffers() {
   await loadOfferHistory();
 
   // Update earnings
-  document.getElementById('total-earnings').textContent = `$${userBalance.toFixed(2)}`;
-  document.getElementById('total-offers-count').textContent = offerHistory.length;
-  document.getElementById('available-balance').textContent = `$${userBalance.toFixed(2)}`;
+  document.getElementById('total-earnings').textContent = 'Unverified';
+  document.getElementById('total-offers-count').textContent = 'Unverified';
+  document.getElementById('available-balance').textContent = 'Unverified';
 
-  if (userBalance >= 10) {
-    document.getElementById('payout-btn').style.display = 'block';
-    document.getElementById('payout-min-notice').style.display = 'none';
-  }
+  document.getElementById('payout-btn').style.display = 'none';
+  document.getElementById('payout-min-notice').textContent = 'Payouts are unavailable in this build.';
 }
 
-function acceptOffer(offerId) {
-  const offer = AVAILABLE_OFFERS.find(o => o.id === offerId);
-  if (!offer) return;
-
-  selectedOfferId = offerId;
-  const section = document.getElementById('offer-submit-section');
-  section.style.display = 'block';
-
-  document.getElementById('selected-offer-info').innerHTML = `
-    <strong>Offer:</strong> ${offer.title} &mdash; <strong style="color:var(--teal)">$${offer.payoutUSD.toFixed(2)}</strong><br>
-    <strong>Buyer:</strong> ${offer.buyer}<br>
-    <strong>Data type:</strong> ${offer.dataType}<br>
-    <span style="color:var(--text-3)">Write your summary below. Only what you type is submitted.</span>
-  `;
-
-  document.getElementById('offer-title').value = '';
-  document.getElementById('offer-summary').value = '';
-  document.getElementById('summary-count').textContent = '0';
-
-  section.scrollIntoView({ behavior: 'smooth' });
+function acceptOffer() {
+  showToast('Secure per-offer consent is not connected. Submission is unavailable.');
 }
 
 function closeOfferForm() {
@@ -285,115 +265,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function submitOffer() {
-  if (!selectedOfferId) return;
-  if (!participant) {
-    showToast('Set a participant ID in Settings first — your rail issues it');
-    return;
-  }
-
-  const offer = AVAILABLE_OFFERS.find(o => o.id === selectedOfferId);
-  const title = document.getElementById('offer-title').value.trim();
-  const summary = document.getElementById('offer-summary').value.trim();
-
-  if (!title || !summary) {
-    showToast('Please fill in both the title and summary');
-    return;
-  }
-
-  if (summary.length < 50) {
-    showToast('Summary must be at least 50 characters');
-    return;
-  }
-
-  showToast('Submitting your offer...');
-
-  const result = await ndani.api.fetch('/api/offers/submit', {
-    method: 'POST',
-    body: {
-      participant: participant.participant_id,
-      offer_id: selectedOfferId,
-      data_type: offer.dataType,
-      title: title,
-      summary: summary,
-    },
-  });
-
-  if (result.error && !result.offer_id) {
-    // Fallback to legacy vault endpoint
-    const legacyResult = await ndani.api.fetch('/api/vault/offer', {
-      method: 'POST',
-      body: {
-        participant: participant.participant_id,
-        data_type: offer.dataType,
-        title: title,
-        summary: summary,
-      },
-    });
-
-    if (legacyResult.offer_id) {
-      userBalance += offer.payoutUSD;
-      showToast(`Offer accepted! You earned $${offer.payoutUSD.toFixed(2)}`);
-      closeOfferForm();
-      loadOffers();
-      return;
-    }
-
-    showToast('Submission failed: ' + (legacyResult.detail || legacyResult.error || 'unknown error'));
-    return;
-  }
-
-  if (result.offer_id) {
-    userBalance += (result.payout_usd || offer.payoutUSD);
-    showToast(`Offer accepted! You earned $${(result.payout_usd || offer.payoutUSD).toFixed(2)}`);
-    closeOfferForm();
-    loadOffers();
-  }
+  showToast('Secure per-offer consent is not available in this build. Nothing was submitted.');
 }
 
 async function loadOfferHistory() {
-  if (!participant) return;
-
-  const result = await ndani.api.fetch(
-    `/api/vault/history?participant=${encodeURIComponent(participant.participant_id)}&sig=${encodeURIComponent(participant.signature || '')}`
-  );
-
-  if (result.offers) {
-    offerHistory = result.offers;
-    userBalance = result.total_earned_usd || 0;
-
-    const tbody = document.getElementById('offer-history');
-    if (!offerHistory.length) {
-      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-3)">No offers yet — browse available offers above</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = offerHistory.map(o => `
-      <tr>
-        <td>${new Date(o.offered_at).toLocaleDateString()}</td>
-        <td><span class="offer-tag">${o.data_type}</span></td>
-        <td>${o.title}</td>
-        <td style="font-weight:600; color:var(--teal);">$${o.credit_amount_usd.toFixed(2)}</td>
-        <td><span class="badge badge-${o.status === 'accepted' ? 'ready' : 'pending'}">${o.status}</span></td>
-      </tr>
-    `).join('');
-  }
+  userBalance = null;
+  offerHistory = [];
+  document.getElementById('offer-history').innerHTML =
+    '<tr><td colspan="5">History is unavailable until secure participant identity is connected.</td></tr>';
 }
 
 async function requestPayout() {
-  const email = document.getElementById('payout-email')?.value;
-  if (!email) {
-    showToast('Set your payout email in Settings first');
-    navigate('settings');
-    return;
-  }
-
-  if (userBalance < 10) {
-    showToast('Minimum $10.00 required for payout');
-    return;
-  }
-
-  // NOT IMPLEMENTED. There is no POST /api/payout/request call here, so do not
-  // tell the user money is on its way — say plainly that nothing was submitted.
   showToast('Payouts are not available in this build. Nothing was submitted.');
 }
 
@@ -479,7 +361,7 @@ async function loadSettings() {
     document.getElementById('participant-id').value = participant.participant_id || '';
     document.getElementById('participant-sig').value = participant.signature || '';
     document.getElementById('participant-status').innerHTML =
-      '<span class="badge badge-ready">Saved on this device</span>';
+      '<span>Legacy identifier saved locally; unverified and unable to authorize sales.</span>';
     if (participant.payout_email) {
       document.getElementById('payout-email').value = participant.payout_email;
     }
@@ -492,7 +374,7 @@ async function saveParticipantID() {
   const id = document.getElementById('participant-id').value.trim();
   const sig = document.getElementById('participant-sig').value.trim();
   if (!id) {
-    showToast('Enter the participant ID your rail issued you');
+    showToast('Secure participant identity is unavailable; a saved identifier cannot authorize a sale.');
     return;
   }
   participant = { participant_id: id, signature: sig, payout_email: participant?.payout_email };

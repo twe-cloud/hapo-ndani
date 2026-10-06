@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import CoreFoundation
 import Observation
 
 public enum NdaniModelTier: String, CaseIterable, Sendable {
@@ -1500,7 +1501,8 @@ public final class NdaniMarketplace {
                   json["status"] as? String == "consented",
                   json["payout_status"] as? String == "unverified",
                   json["contributor_obligation_cents"] is NSNull,
-                  json["withdrawal_available"] as? Bool == false else {
+                  let withdrawal = json["withdrawal_available"] as? NSNumber,
+                  CFGetTypeID(withdrawal) == CFBooleanGetTypeID(), !withdrawal.boolValue else {
                 lastError = "Submission held; no verified consent acceptance response."
                 return
             }

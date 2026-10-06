@@ -1,0 +1,48 @@
+{
+  "description": "Synthetic offline full frozen-offer conformance. Ephemeral signing key discarded; no buyer, participant, settlement or payment exists.",
+  "producer": "Python cryptography",
+  "test_clock": 1700000000,
+  "offer_id": "synthetic-frozen-offer/v1",
+  "offer": {
+    "buyer_price_cents": 300,
+    "contributor_cents": 150,
+    "share_percent": 50,
+    "reserve_percent": 10,
+    "reserve_cents": 30,
+    "fee_budget_usd": "0.001",
+    "qa_storage_budget_usd": "0.50",
+    "payout_budget_usd": "0.10",
+    "actual_cost_usd": null,
+    "currency": "USD",
+    "buyer_verified": true,
+    "licensing_verified": true,
+    "buyer": "synthetic buyer / café / café",
+    "purpose": "synthetic language evaluation\n🙂 only",
+    "language": "synthetic / Kiswahili",
+    "format": "written-summary",
+    "license_scope": "synthetic nonexclusive one-summary evaluation; no model training or resale",
+    "acceptance_criteria": "synthetic buyer accepted original text",
+    "provenance_policy": "synthetic user-authored only; no third-party material",
+    "sale_quantity": 1,
+    "platform_destination": "synthetic-platform-destination",
+    "contributor_recipient": "synthetic-contributor-destination",
+    "payment_network": "synthetic-network",
+    "payment_asset": "synthetic-asset",
+    "retention_until": 1700007200
+  },
+  "terms_sha256": "5d05402fec27be64ed7f383245bab888c6645705c42bd32e35eb11137f325582",
+  "canonical_offer_utf8": "{\"acceptance_criteria\":\"synthetic buyer accepted original text\",\"actual_cost_usd\":null,\"buyer\":\"synthetic buyer / café / café\",\"buyer_price_cents\":300,\"buyer_verified\":true,\"contributor_cents\":150,\"contributor_recipient\":\"synthetic-contributor-destination\",\"currency\":\"USD\",\"fee_budget_usd\":\"0.001\",\"format\":\"written-summary\",\"language\":\"synthetic / Kiswahili\",\"license_scope\":\"synthetic nonexclusive one-summary evaluation; no model training or resale\",\"licensing_verified\":true,\"payment_asset\":\"synthetic-asset\",\"payment_network\":\"synthetic-network\",\"payout_budget_usd\":\"0.10\",\"platform_destination\":\"synthetic-platform-destination\",\"provenance_policy\":\"synthetic user-authored only; no third-party material\",\"purpose\":\"synthetic language evaluation\\n🙂 only\",\"qa_storage_budget_usd\":\"0.50\",\"reserve_cents\":30,\"reserve_percent\":10,\"retention_until\":1700007200,\"sale_quantity\":1,\"share_percent\":50}",
+  "envelope": {
+    "participant": "N4RCAXBPfiHMdOo09-GvO80-aSRP5cNARGWyMfqMvvM",
+    "payload": "eyJleHBsaWNpdF9jb25zZW50Ijp0cnVlLCJub25jZSI6InN5bnRoZXRpYy1mcm96ZW4tb2ZmZXItbm9uY2UtMDAwMSIsIm9mZmVyX2lkIjoic3ludGhldGljLWZyb3plbi1vZmZlci92MSIsInBhcnRpY2lwYW50IjoiTjRSQ0FYQlBmaUhNZE9vMDktR3ZPODAtYVNSUDVjTkFSR1d5TWZxTXZ2TSIsInJldGVudGlvbl91bnRpbCI6MTcwMDAwMzYwMCwic3VtbWFyeSI6InN5bnRoZXRpYzogY2Fmw6kgLyBjYWZlzIEgLyDwn5mCIC8gTmFpcm9iaVxuT25seSB0aGlzIHR5cGVkIHRleHQuIiwidGVybXNfc2hhMjU2IjoiNWQwNTQwMmZlYzI3YmU2NGVkN2YzODMyNDViYWI4ODhjNjY0NTcwNWM0MmJkMzJlMzVlYjExMTM3ZjMyNTU4MiIsInRpbWVzdGFtcCI6MTcwMDAwMDAwMCwidXNlcl9hdXRob3JlZCI6dHJ1ZX0",
+    "signature": "_lOPbvaxySZv0e65hGs4WIj9mwFH_jvDbChQxBadJPJl0WWNsCwAH6uX-EfXLRU9Y6wUIdxkTrfU2gDbYhK7DA"
+  },
+  "receipt": {
+    "submission_id": "3ff1646288ef594e35c665ef7df816363d2bb95e125e10a8046e7d70d796fc7d",
+    "request_sha256": "3ff1646288ef594e35c665ef7df816363d2bb95e125e10a8046e7d70d796fc7d",
+    "status": "consented",
+    "payout_status": "unverified",
+    "contributor_obligation_cents": null,
+    "withdrawal_available": false
+  }
+}

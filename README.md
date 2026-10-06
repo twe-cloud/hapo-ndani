@@ -4,19 +4,31 @@
 implementation.**
 
 A person grants scoped access to their own files. They see an offer — who wants
-what, and what it pays. They decide, per offer, whether to send anything. The
-money routes to *them*, not to a platform. Every local read is written to an
+what, and what it pays. They decide, per offer, whether to send anything. The design calls for the money to reach *them*. A production payout integration is still required. Every local read is written to an
 append-only ledger, including whether it ever left the device.
 
 That sequence — **scope → offer → consent → payment → provenance** — is what
 this repository specifies.
 
-**Be exact about what is built.** Scope, consent and provenance are implemented
-here, and they work with the machine offline. The paying half is a
-specification with nothing behind it: there is no rail in this repository, no
-payout has ever been made, and **no participant has ever been paid.** If you
-are evaluating this, evaluate the design — there is no track record to weigh,
-and any page that implies otherwise is wrong.
+**What works today:** local folder scope and read records, plus a Swift core
+that signs per-offer consent and checks a hash-bound consent response. The app
+screens still need secure key storage and that consent flow connected. There is
+no production payout integration in this repository and **no paid-participant
+track record demonstrated here**. Consent acceptance is never shown as earnings.
+
+**Try the signed proof in one command** (Node.js 22+, no install or account):
+
+```bash
+node tools/consent-proof.cjs --demo
+```
+
+It verifies synthetic Swift and Node signatures, then rejects a changed summary,
+changed signed terms digest, substituted key and invented receipt amount. A
+Python-signed fixture binds the full frozen offer and rejects changes to the buyer,
+purpose, price or contributor amount. It checks integrity and terms binding,
+not buyer identity, funding, legal adequacy or payment. See the
+[implemented protocol](docs/CONSENT_SALE_PROTOCOL.md) and
+[conformance guide](docs/BACKEND_SEAM.md).
 
 *Hapo ndani* is Swahili for "in there".
 
@@ -34,18 +46,17 @@ Plenty of software runs a model on your laptop. What is missing is the part wher
 a person can **sell access to their own data on terms they can see**, and have
 the proceeds reach them rather than a platform.
 
-Four pieces make that work, and they are all here:
+Four pieces define the work; their implementation status differs:
 
 | | |
 | --- | --- |
 | **Scope** | Access is granted per folder and is revocable. On Apple platforms it uses security-scoped bookmarks, so a grant can go *stale* — and the app reports that rather than silently retrying. No scope, no read. |
-| **Consent** | Granting folder access is **not** consent to sell. Submitting to an offer is a separate, explicit act, for one offer, carrying text the person wrote themselves. The client has no field for file contents — the invariant is structural, not a promise. |
-| **Payment** | *Specified, not shipped.* The payout figure is defined as what the **person** receives, not a platform cut, and balance, earnings and withdrawal eligibility are defined as user-visible — but all of it renders from a rail, and no rail exists. Identity is an **Ed25519 keypair the client generates locally**: the rail issues nothing and learns nothing it was not handed. Payout is the deliberate exception, because getting paid requires KYC. |
-| **Provenance** | Every read lands in an append-only ledger with a `wasSentOffDevice` flag and the *length* of what was read, never the content. That is what makes "it stayed local" auditable instead of a marketing line. |
+| **Consent** | Granting folder access is **not** consent to sell. Submitting to an offer is a separate, explicit act, for one offer, carrying text the person wrote themselves. The signed core payload has no file-content field; the app UI integration is pending. |
+| **Payment** | *No production integration shipped.* The payout figure is defined as what the **person** receives, not a platform cut, and balance, earnings and withdrawal eligibility are defined as user-visible — but a verified money source is still required. The core signs with a caller-supplied **Ed25519 keypair**; secure storage and recovery remain to build. Payout is the deliberate exception, because getting paid requires KYC. |
+| **Provenance** | Every read lands in an append-only ledger with a `wasSentOffDevice` flag and the *length* of what was read, never the content. This records app behavior; it is not an immutable attestation or independent network monitor. |
 
 The protocol is specified in **[docs/BACKEND_SEAM.md](docs/BACKEND_SEAM.md)** —
-six endpoints, two invariants, the keypair identity scheme, and the local types they act against. It is
-written so a third party can implement a rail against it.
+the current boundary, identity limitations, and offline conformance commands. The signed wire contract lives in **[docs/CONSENT_SALE_PROTOCOL.md](docs/CONSENT_SALE_PROTOCOL.md)**.
 
 ## The reference client
 
@@ -103,14 +114,14 @@ Pull requests welcome.
 
 | | Why |
 | --- | --- |
-| A rail — the service that publishes offers and moves money | The commercial counterparty side. Note the honest version: this is not a finished implementation we chose to keep closed. **No rail exists.** The **protocol** is fully specified in `docs/BACKEND_SEAM.md` so you can build one; we have not. |
+| A rail — the service that publishes offers and moves money | The commercial counterparty side is outside this repository. A signed protocol and offline proof do not constitute a live buyer catalog, settlement or participant payout integration. |
 | Marketing site, internal operations, release-readiness notes, store-submission records, pricing analysis, security audits | Internal business material, of no use to anyone building this. |
 | Model weights | No right to redistribute. |
 | Our signing certificate, Apple Team ID, Android upload keystore | Yours go in local files this repo ignores. |
 
 **None of it is required to build and run the apps.** With no rail configured,
 the offer and payment features report that they are switched off — the
-local half is complete and present.
+local workspace remains usable.
 
 No placeholder offers ship in any client. Offers come from a configured rail or
 the list is empty and says so — a person looking at that screen is seeing real
@@ -197,9 +208,11 @@ and SmartScreen will warn about them. Expected, not a bug.
 ## Contributing
 
 [CONTRIBUTING.md](CONTRIBUTING.md) and
-[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). The most useful contributions are bug
-fixes, real-device Android findings, and anything that makes a failure state
-clearer.
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Start with `node --test tools/tests/consent-proof.test.cjs`. Useful next
+contributions: secure OS key storage/recovery, a reviewable per-offer consent UI,
+and independent verification against the shared conformance vectors. Real-device
+Android findings and clear failure states are also welcome. Keep consent,
+acceptance, obligations and confirmed payment separate.
 
 The two invariants in `docs/BACKEND_SEAM.md` are not up for negotiation, and
 neither is the local-first posture: a change that adds telemetry, analytics or a

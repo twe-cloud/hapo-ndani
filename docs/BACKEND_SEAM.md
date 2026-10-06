@@ -1,267 +1,108 @@
-# The consent rail protocol
+# Client / rail boundary
 
-This is the boundary between the open client and a consent rail. It is written
-as a **specification**, not as instructions for filling in our URL — you can
-implement it yourself, and the clients in this repository will talk to your
-implementation.
+Hapo Ndani's intended flow is **scope → offer → per-offer consent → payment →
+provenance**. Folder access permits local reads; it does not authorize a sale.
+The participant is the seller. Any offered payout must mean what the participant
+receives. No file-content field belongs in a submission.
 
-The clients here are a **reference implementation**. Everything about consent,
-scope, the audit ledger and the local data store is in this repository and runs
-without any server. The rail handles the parts that need a counterparty: what is
-on offer, and moving money to the user.
+**Current state:** the public Swift core can sign typed summaries and validate a
+minimal, request-bound consent response. The app screens do not yet connect a
+secure key store to this flow. Electron blocks submissions and private-account
+reads in its main process; Android has no network permission. No working payout
+integration ships here, and this work provides no evidence of a paid participant.
 
-## The flow being specified
+The authoritative implemented wire contract is
+[CONSENT_SALE_PROTOCOL.md](CONSENT_SALE_PROTOCOL.md). The earlier unsigned
+`/api/offers/submit` and `/api/vault/offer` shapes are obsolete. Do not implement a
+fallback to them. A signature copied from Settings is not per-offer consent.
 
-```
-  ┌─────────────┐
-  │   1. SCOPE  │  The user grants access to a named folder. Revocable,
-  │             │  per-folder, stored on device. No scope, no read.
-  └──────┬──────┘
-         │
-  ┌──────▼──────┐
-  │   2. OFFER  │  The rail publishes what a buyer wants and what it pays.
-  │             │  The user sees the buyer, the price and the ask up front.
-  └──────┬──────┘
-         │
-  ┌──────▼──────┐
-  │  3. CONSENT │  The user writes their own summary and chooses to submit it.
-  │             │  Per-offer. Nothing is inferred, scraped or pre-filled.
-  └──────┬──────┘
-         │
-  ┌──────▼──────┐
-  │   4. PAY    │  The payout accrues to the user, not to the platform.
-  │             │  Balance and withdrawal eligibility are user-visible.
-  └──────┬──────┘
-         │
-  ┌──────▼──────┐
-  │ 5. PROVENANCE│ Every local read is written to an append-only ledger,
-  │             │  including whether it ever left the device.
-  └─────────────┘
+## Try the protocol offline
+
+From the repository root, with **Node.js 22 or newer**:
+
+```bash
+node tools/consent-proof.cjs --demo
+node --test tools/tests/consent-proof.test.cjs
 ```
 
-Steps 1, 3 and 5 are **local and open** — they are in this repository, and
-they work offline today.
+No install, account, network, model or payment is required. The committed vectors
+were signed separately by Swift CryptoKit and Node crypto. They contain synthetic
+text with an emoji, a combining character, a slash and a newline. Their disposable
+private keys were discarded. Both byte representations verify without reordering
+or normalizing the signed JSON.
 
-Steps 2 and 4 need a rail, and **no rail exists.** Not one we kept private —
-none at all. Nobody has been paid through this protocol, and the payout
-request is not implemented even in the reference clients. Everything below
-about offers and payment is a specification for something you would build,
-not a description of something running.
+The demo rejects changes to the signed summary or terms digest, a substituted
+participant key, and an invented amount in a consent response. A third,
+Python-signed fixture also matches a complete frozen offer to its consent digest,
+and rejects changed buyer, purpose, price or contributor amount. **This verifies
+integrity and terms binding, not the truth of the offer.** It does not authenticate
+the response's rail, check buyer identity/licensing or funding, establish legal
+consent, or prove payment. The
+fixture clock is historical and fixed solely for repeatable tests.
 
-## Two invariants
+To inspect a fresh envelope and optional consent response locally:
 
-An implementation that breaks either of these is not implementing this protocol.
-
-1. **The user is the seller.** The payout in an offer is what the *user*
-   receives. The rail may take a fee, but the number shown to the user is what
-   reaches the user.
-2. **Nothing leaves the device without a per-offer act.** Granting folder scope
-   is not consent to sell. The submission in step 3 is a separate, explicit
-   action for one offer, carrying text the user wrote themselves. The client
-   never uploads file contents — only the user's own summary.
-
-The reference clients enforce the second invariant structurally: the submission
-payload has no field for file contents.
-
-## Configuring a rail
-
-One value per platform. An origin with no trailing slash, e.g.
-`https://api.example.com`. Unset, the rail features report that they are
-switched off; local chat, journal, memory and the ledger are unaffected.
-
-| Platform | Source, in order | File |
-| --- | --- | --- |
-| macOS, iOS | `NDANI_BACKEND_BASE_URL` env, then `NdaniBackendBaseURL` in Info.plist | `desktop-local/Packages/AppCore/Sources/AppCore/NdaniBackendConfig.swift` |
-| Windows, Linux | `NDANI_BACKEND_BASE_URL` env, then `backendBaseURL` in `config.json` | `desktop-windows/main.js` (copy `config.example.json`) |
-| Android | — | No rail calls. Local-only by construction. |
-
-Every call site treats an unconfigured rail as "feature unavailable", never as an
-error. `NdaniBackendConfig.url(_:)` returns `nil`; the Electron IPC handlers
-return `{ ok: false, error: 'no_backend_configured' }`.
-
-## Endpoints
-
-Six, relative to the configured origin. JSON in, JSON out.
-
-### 2. Offer
-
-**`GET /api/offers/available`**
-
-```json
-{
-  "offers": [
-    {
-      "id": "string",
-      "buyer": "string",
-      "buyerVerified": false,
-      "title": "string",
-      "description": "string",
-      "dataType": "writing-style | topic-interests | work-patterns | language-use",
-      "payoutUSD": 5.0,
-      "spotsLeft": 200,
-      "tags": ["string"],
-      "expiresAt": "YYYY-MM-DD"
-    }
-  ]
-}
+```bash
+node tools/consent-proof.cjs --verify envelope.json receipt.json offer.json
 ```
 
-`buyerVerified` is a claim **your rail is making and must be able to
-substantiate.** The reference clients ship example offers with this field absent
-and render no verification badge, because a reference implementation cannot
-verify anybody. If you set it true, be prepared to say what you checked.
+This command checks the current 300-second freshness window and prints hashes and
+status only, never the summary or private keys. A copied response matching the
+request proves no server accepted it: authenticated transport and a durable
+journal remain a rail responsibility. With an `offer.json` file the complete
+flat offer is hashed using the rail's sorted-key, compact UTF-8 JSON convention;
+`terms_match` is `matched` only when that digest equals the signed digest.
+Omit the offer file and terms matching remains `not_checked`. Replay checking,
+buyer authentication and receipt authentication remain explicitly `not_checked`.
+An offer match does not establish that its buyer, rights or price are legitimate. Receipt input here is
+the minimal **consent acceptance response**, not a settlement/payment receipt.
 
-`dataType` is a closed set — see `NdaniVaultDataType` in `StarterAppState.swift`.
+## Configuring discovery
 
-### 3. Consent and submission
+An unset origin disables hosted features. Apple reads `NDANI_BACKEND_BASE_URL`,
+then `NdaniBackendBaseURL` in Info.plist. Electron reads the same environment
+variable, then `backendBaseURL` in `config.json`. Example: `https://api.example.com`.
+Local model loading, journal and memory do not depend on that origin.
 
-**`POST /api/offers/submit`**
+- `GET /api/offers/available` returns `{ "offers": [] }` when there is no demand.
+  Apple accepts camelCase or snake_case field aliases and rejects conflicts.
+  Required fields: id, buyer, title, description, data type, and finite payout.
+  Data types: writing-style, topic-interests, work-patterns, language-use.
+  No fabricated offers or verification badges are provided by the clients.
+- `POST /api/consent-sale/submit` is the signed core path described in the wire
+  contract. A successful consent response conveys **no accrued earnings**.
+  Unavailable/non-success/malformed/unbound responses stay unavailable.
+- `GET /api/balance` is an incomplete Apple integration surface, not a working
+  payout rail. Missing/malformed financial fields stay unknown; they are never
+  converted to zero. Secure request authentication is still a required task.
+- `GET /api/updates/latest` is an optional, user-requested update check.
 
-```json
-{ "participant": "base64url ed25519 public key", "offer_id": "string",
-  "data_type": "string",
-  "title": "string", "summary": "string" }
-```
+Electron's IPC permits only exact public discovery/update GET routes with no
+body or extra options. It does not permit identity history, balance, consent,
+legacy submissions or payouts. Its current offer screen remains empty; the
+allowlist does not imply a connected offer-loading UI.
 
-Response:
+## Identity and its limits
 
-```json
-{ "submission_id": "string", "offer_id": "string",
-  "payout_usd": 5.0, "message": "string" }
-```
+The target is a locally generated Ed25519 keypair, with the public key as the
+participant handle and the private key held by an OS key store. The Swift core
+currently takes a caller-supplied per-use key; it does not implement custody or
+recovery. The rail does not issue this signing identity.
 
-On refusal, return `detail` with a reason the user can act on. `summary` is text
-the user typed; the reference clients cap it at 1200 characters. **There is no
-field for file contents, and adding one would break invariant 2.**
+A key is pseudonymous, not anonymous or proof of a unique human. A rail can link
+submissions made with it; summaries and network metadata can reveal identity.
+Payout onboarding requires its own identity controls. A payment account can help
+with duplicate-account checks but does not prove one person has only one account.
+Key rotation, recovery and account linking need an explicit policy before launch.
 
-**`POST /api/vault/offer`** — the earlier submission path, kept as a fallback.
-Same shape without `offer_id`; responds with `{ offer_id, credit_code,
-credit_amount_usd, message }`.
+## Local provenance
 
-**`GET /api/vault/history?participant=&sig=`** — prior submissions for a participant.
+`NdaniAllowedFolder` represents revocable folder scope. Apple security-scoped
+bookmarks report stale access instead of silently widening permissions.
+`NdaniLocalReadLedgerEntry` records a timestamp, paths, status, preview length and
+`wasSentOffDevice`, without the preview content. This bounded local log records
+what the app reported; it is not a network-egress monitor or immutable attestation.
 
-### 4. Payment
-
-**`GET /api/balance?participant=&sig=`**
-
-```json
-{ "balance_usd": 0.0, "total_earned_usd": 0.0, "total_paid_out_usd": 0.0,
-  "can_withdraw": false, "stripe_connected": false }
-```
-
-All fields optional; missing numbers read as `0`, missing booleans as `false`.
-
-`can_withdraw` is the rail's answer, and the client trusts it — so it must
-reflect a real, reachable withdrawal, not an aspiration. **Payout request is not
-implemented in the reference clients.** `desktop-windows` states plainly that
-payouts are unavailable in the build rather than implying money is moving.
-
-### Updates
-
-**`GET /api/updates/latest`** — `{ version, release_notes, download_url }`, all
-three required. **Only fetched when the user presses a button.** Do not design a
-manifest expecting polling.
-
-## Participant identity
-
-**The app is free.** There is no licence, no activation and no purchase. That
-removed what the earlier protocol used to identify a participant, and the
-replacement is a deliberate design choice rather than a rename.
-
-**The client generates a keypair locally. The public key is the identity. The
-rail issues nothing.**
-
-### The contract
-
-- On first use of a rail feature, the client generates an **Ed25519 keypair**
-  and stores the private key in the platform keystore (Keychain on Apple
-  platforms, the OS credential store elsewhere). It never leaves the device
-  and is never transmitted.
-- The **public key**, base64url-encoded, is the `participant` value on every
-  rail call. The rail treats it as an opaque account handle.
-- Every submission carries a **detached signature** over a canonical
-  serialization of the payload, including a timestamp and a single-use nonce
-  so a captured submission cannot be replayed.
-- The rail **verifies the signature against the public key it was given**. It
-  issues no credential, so there is no credential for it to revoke, correlate
-  across products, or leak.
-- Rotation is the participant generating a new keypair. The rail treats that
-  as a new account, because from its side it is one.
-
-### What this does and does not buy
-
-It buys a real property: **a rail cannot link a participant to anything it was
-not handed.** There is no issued identifier tying submissions to a purchase, a
-device, an email, or an account the rail created. It also removes a whole class
-of failure — there is no credential database to breach.
-
-It does **not** buy anonymity, and this spec will not imply that it does:
-
-- A rail sees every submission made under one public key, so submissions are
-  **linkable to each other**. That is unavoidable if a balance is to accrue.
-- A person writing a summary about their own habits can **identify themselves
-  in the text**, whatever the protocol does.
-- **Payout requires identity.** Money moves through a payment processor, and
-  that processor performs KYC. The moment a participant withdraws, a real
-  legal identity attaches to that public key.
-
-So the line is drawn deliberately, and it is worth stating to a participant in
-plain words: **the rail learns who you are when you take money out, not when
-you submit.** Submission is pseudonymous; withdrawal is not, and it cannot be.
-A rail that claims otherwise is either not paying people or not telling the
-truth.
-
-### Sybil resistance moved, and you must notice
-
-Under the old paid model, fabricating a participant cost the price of a
-licence. **The app is free now, so generating a keypair costs nothing** — a
-public key is not a scarce resource, and nothing stops one person minting
-thousands.
-
-The scarcity moved to the payout leg: a payment processor's KYC'd account is
-the thing that is hard to duplicate. A rail must therefore treat **the payout
-account, not the public key, as the unit of uniqueness** for anything that
-depends on one-person-one-submission — per-person caps, duplicate detection,
-fraud limits. Enforcing a cap per public key enforces nothing at all.
-
-### Reference client status
-
-The clients in this repository **do not implement signing yet.** They send a
-`participant` value and pass a `signature` field straight through without
-generating or verifying anything. The keypair scheme above is the specified
-target and the field shapes already match it; the cryptography is the gap.
-
-Being precise about that, because it matters to anyone building against this:
-**a rail must not treat the current clients' `signature` field as
-authenticated.** It carries whatever the client was given. Implementing
-Ed25519 generation, storage and signing is a welcome contribution.
-
-## Local primitives, for reference## Local primitives, for reference
-
-Not endpoints. These are in this repository and are what the rail is consenting
-*against*.
-
-**Scope** — `NdaniAllowedFolder { id, displayName, path, bookmarkData,
-isBookmarkStale }`. macOS/iOS use security-scoped bookmarks, so a grant can go
-stale and is reported as stale rather than silently retried.
-
-**Provenance** — `NdaniLocalReadLedgerEntry { id, timestamp, folderPath,
-filePath, status, previewLength, wasSentOffDevice }`. Append-only, bounded,
-persisted locally. `wasSentOffDevice` is the field that makes the claim
-auditable: a read is recorded with whether it ever left the machine.
-`previewLength` records the size of what was read without recording the content.
-
-**Read status** — `noFolder`, `stalePermission`, `accessDenied`,
-`outsideApprovedFolder`, `missingFile`, `unreadable`, `ready`. A read outside an
-approved folder is a distinct, reported outcome, not a generic failure.
-
-## If you implement this
-
-The awkward thing about this protocol is worth saying out loud: steps 2 through
-4 move a person's own writing to a counterparty for money, which cuts against
-everything steps 1, 3 and 5 exist to protect. That tension is the whole design
-problem, and it is why the invariants above are invariants.
-
-If you run a rail, be at least as explicit with your users as you would want a
-rail to be with you. Show the buyer. Show the price. Never pre-fill the summary.
-Never present a sample as live demand.
+The signed summary is a separate act. A consent receipt is distinct from a local
+file-read record, buyer acceptance, settlement, an accrued contributor obligation
+and a confirmed payment. An implementation must keep those facts separate.

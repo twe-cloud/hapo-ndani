@@ -1,0 +1,38 @@
+{
+  "description": "Synthetic offline conformance vectors. Ephemeral signing keys discarded; no real participant, offer, settlement or payment.",
+  "test_clock": 1700000000,
+  "vectors": [
+    {
+      "envelope": {
+        "participant": "dZM8S1rQoGsVEfWmCeqdI47IuUa7a7eKbMl4B14NxDI",
+        "payload": "eyJleHBsaWNpdF9jb25zZW50Ijp0cnVlLCJub25jZSI6InN5bnRoZXRpYy1ub25jZS1zd2lmdC0wMDAxIiwib2ZmZXJfaWQiOiJzeW50aGV0aWMtb2ZmZXIvdjEiLCJwYXJ0aWNpcGFudCI6ImRaTThTMXJRb0dzVkVmV21DZXFkSTQ3SXVVYTdhN2VLYk1sNEIxNE54REkiLCJyZXRlbnRpb25fdW50aWwiOjE3MDAwMDM2MDAsInN1bW1hcnkiOiJzeW50aGV0aWM6IGNhZsOpIC8gY2FmZcyBIC8g8J-ZgiAvIE5haXJvYmlcbk9ubHkgdGhpcyB0eXBlZCB0ZXh0LiIsInRlcm1zX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJ0aW1lc3RhbXAiOjE3MDAwMDAwMDAsInVzZXJfYXV0aG9yZWQiOnRydWV9",
+        "signature": "_4lzYJIeFwal4ZK461x8fwFK8VWj9RO_wqM3K_CIaMVjVUcR7jW-ZS6hN6PdmEXnOkeNll7xbkKGDbCuhfLrBw"
+      },
+      "producer": "Swift CryptoKit",
+      "receipt": {
+        "submission_id": "1111111111111111111111111111111111111111111111111111111111111111",
+        "request_sha256": "5922db0acd96d83e1d9fa72d3c6297a10e58baa59a92ea51b423d75c70ec2471",
+        "status": "consented",
+        "payout_status": "unverified",
+        "contributor_obligation_cents": null,
+        "withdrawal_available": false
+      }
+    },
+    {
+      "producer": "Node crypto",
+      "envelope": {
+        "participant": "ANCUp0YxJiPPQImT3fEHrz-SEKwaFJzaA7pSao_CElY",
+        "payload": "ewogICJwYXJ0aWNpcGFudCI6ICJBTkNVcDBZeEppUFBRSW1UM2ZFSHJ6LVNFS3dhRkp6YUE3cFNhb19DRWxZIiwKICAib2ZmZXJfaWQiOiAic3ludGhldGljLW9mZmVyL3YxIiwKICAidGVybXNfc2hhMjU2IjogImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLAogICJzdW1tYXJ5IjogInN5bnRoZXRpYzogY2Fmw6kgLyBjYWZlzIEgLyDwn5mCIC8gTmFpcm9iaVxuT25seSB0aGlzIHR5cGVkIHRleHQuIiwKICAidXNlcl9hdXRob3JlZCI6IHRydWUsCiAgImV4cGxpY2l0X2NvbnNlbnQiOiB0cnVlLAogICJub25jZSI6ICJzeW50aGV0aWMtbm9uY2Utbm9kZS0wMDAxIiwKICAidGltZXN0YW1wIjogMTcwMDAwMDAwMCwKICAicmV0ZW50aW9uX3VudGlsIjogMTcwMDAwMzYwMAp9",
+        "signature": "l3PIFhmDZY0ILp9B1INKteawnjs4YL9pwfgPKkMMOtRTvb5X4JRH4wv5o57Wu0_QsgxGnFgLn4JzzfazRUMvCw"
+      },
+      "receipt": {
+        "submission_id": "2222222222222222222222222222222222222222222222222222222222222222",
+        "request_sha256": "af661034b12d77cf39e0d296b8f441f27d6cbe92cb23d7dfb6e84f665edcd3ec",
+        "status": "consented",
+        "payout_status": "unverified",
+        "contributor_obligation_cents": null,
+        "withdrawal_available": false
+      }
+    }
+  ]
+}

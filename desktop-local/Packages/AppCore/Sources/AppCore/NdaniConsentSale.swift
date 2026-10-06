@@ -19,9 +19,15 @@ public struct NdaniConsentEnvelope: Sendable {
                             termsSHA256: String, summary: String,
                             explicitConsent: Bool, userAuthored: Bool,
                             timestamp: Int, retentionUntil: Int, nonce: String) throws -> Self {
-        guard (1...1200).contains(summary.unicodeScalars.count) else { throw NdaniConsentSaleError.invalidSummary }
-        guard explicitConsent, userAuthored, !offerID.isEmpty, termsSHA256.count == 64,
-              nonce.count >= 16, retentionUntil > timestamp else { throw NdaniConsentSaleError.invalidConsent }
+        guard (1...1200).contains(summary.unicodeScalars.count),
+              !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw NdaniConsentSaleError.invalidSummary }
+        guard explicitConsent, userAuthored,
+              !offerID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              offerID.unicodeScalars.count <= 512,
+              termsSHA256.count == 64, termsSHA256.allSatisfy({ "0123456789abcdef".contains($0) }),
+              (16...128).contains(nonce.unicodeScalars.count), timestamp > 0,
+              timestamp <= 9_007_199_254_740_991, retentionUntil <= 9_007_199_254_740_991,
+              retentionUntil > timestamp else { throw NdaniConsentSaleError.invalidConsent }
         let participant = base64url(key.publicKey.rawRepresentation)
         let fields: [String: Any] = ["participant": participant, "offer_id": offerID,
             "terms_sha256": termsSHA256, "summary": summary, "explicit_consent": true,
@@ -32,18 +38,31 @@ public struct NdaniConsentEnvelope: Sendable {
         return Self(participant: participant, payload: base64url(raw), signature: base64url(try key.signature(for: raw)))
     }
 
+    private static func decodeCanonicalBase64url(_ value: String) -> Data? {
+        guard let data = Data(base64Encoded: value.replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/") + String(repeating: "=", count: (4-value.count%4)%4)),
+              base64url(data) == value else { return nil }
+        return data
+    }
+
     public var json: [String: String] { ["participant": participant, "payload": payload, "signature": signature] }
     public var requestSHA256: String? {
-        guard let raw = Data(base64Encoded: payload.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/") + String(repeating: "=", count: (4 - payload.count % 4) % 4)) else { return nil }
+        guard let raw = Self.decodeCanonicalBase64url(payload) else { return nil }
         return SHA256.hash(data: raw).map { String(format: "%02x", $0) }.joined()
     }
 
     public func matches(participantID: String, offerID: String, summary: String) -> Bool {
         guard participant == participantID,
-              let raw = Data(base64Encoded: payload.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/") + String(repeating: "=", count: (4 - payload.count % 4) % 4)),
+              let raw = Self.decodeCanonicalBase64url(payload),
               let fields = (try? JSONSerialization.jsonObject(with: raw)) as? [String: Any]
         else { return false }
-        return fields["offer_id"] as? String == offerID && fields["summary"] as? String == summary
+        guard fields["participant"] as? String == participant,
+              fields["offer_id"] as? String == offerID, fields["summary"] as? String == summary,
+              let publicKeyData = Self.decodeCanonicalBase64url(participant), publicKeyData.count == 32,
+              let signatureData = Self.decodeCanonicalBase64url(signature), signatureData.count == 64,
+              let publicKey = try? Curve25519.Signing.PublicKey(rawRepresentation: publicKeyData)
+        else { return false }
+        return publicKey.isValidSignature(signatureData, for: raw)
     }
 }
 

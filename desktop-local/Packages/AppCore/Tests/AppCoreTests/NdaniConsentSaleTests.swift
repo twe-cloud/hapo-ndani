@@ -12,6 +12,36 @@ struct NdaniConsentSaleTests {
         func decode(_ s: String) -> Data { Data(base64Encoded: s.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/") + String(repeating: "=", count: (4-s.count%4)%4))! }
         #expect(key.publicKey.isValidSignature(decode(e.signature), for: decode(e.payload)))
     }
+    @Test func sharedNodeAndSwiftVectorsVerifyWithoutReserialization() throws {
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<6 { root.deleteLastPathComponent() }
+        let fixture = try JSONSerialization.jsonObject(with: Data(contentsOf: root.appendingPathComponent("protocol/fixtures/consent-v1.json"))) as! [String: Any]
+        let vectors = fixture["vectors"] as! [[String: Any]]
+        #expect(vectors.count == 2)
+        for vector in vectors {
+            let wire = vector["envelope"] as! [String: String]
+            let envelope = NdaniConsentEnvelope(participant: wire["participant"]!, payload: wire["payload"]!, signature: wire["signature"]!)
+            let text = "synthetic: café / cafe\u{0301} / 🙂 / Nairobi\nOnly this typed text."
+            #expect(envelope.matches(participantID: envelope.participant, offerID: "synthetic-offer/v1", summary: text))
+            #expect(envelope.requestSHA256 == (vector["receipt"] as! [String: Any])["request_sha256"] as? String)
+            let corrupted = NdaniConsentEnvelope(participant: envelope.participant, payload: envelope.payload, signature: String(repeating: "A", count: 86))
+            #expect(!corrupted.matches(participantID: envelope.participant, offerID: "synthetic-offer/v1", summary: text))
+        }
+    }
+
+    @Test func malformedTermsNonceAndTimesFailBeforeSigning() throws {
+        let key = Curve25519.Signing.PrivateKey()
+        func make(terms: String = String(repeating: "a", count: 64), nonce: String = "fixture-nonce-0001", timestamp: Int = 1000, retention: Int = 1500, summary: String = "synthetic") throws {
+            _ = try NdaniConsentEnvelope.make(key: key, offerID: "fixture", termsSHA256: terms, summary: summary,
+                explicitConsent: true, userAuthored: true, timestamp: timestamp, retentionUntil: retention, nonce: nonce)
+        }
+        #expect(throws: NdaniConsentSaleError.self) { try make(terms: String(repeating: "Z", count: 64)) }
+        #expect(throws: NdaniConsentSaleError.self) { try make(nonce: String(repeating: "a", count: 129)) }
+        #expect(throws: NdaniConsentSaleError.self) { try make(timestamp: 0) }
+        #expect(throws: NdaniConsentSaleError.self) { try make(retention: 9_007_199_254_740_992) }
+        #expect(throws: NdaniConsentSaleError.self) { try make(summary: " \n ") }
+    }
+
     @Test func scalarLimitAndExplicitConsent() throws {
         let key = Curve25519.Signing.PrivateKey()
         func make(_ text: String, _ consent: Bool = true) throws -> NdaniConsentEnvelope {
@@ -54,7 +84,7 @@ struct NdaniConsentSaleTests {
     @MainActor @Test func actualSignedSubmitRequiresSuccessfulBoundMinimalReceipt() async throws {
         let e = try NdaniConsentEnvelope.make(key: Curve25519.Signing.PrivateKey(), offerID: "fixture", termsSHA256: String(repeating: "a", count:64), summary:"synthetic", explicitConsent:true, userAuthored:true, timestamp:1000, retentionUntil:1500, nonce:"fixture-nonce-0001")
         let market = NdaniMarketplace(backendBase:"https://invalid.example")
-        for mode in ["success", "503", "echo", "wrong-hash", "malformed"] {
+        for mode in ["success", "503", "echo", "wrong-hash", "malformed", "numeric-boolean"] {
             let session = fixtureSession(mode); defer { session.invalidateAndCancel() }
             await market.submit(participantID:e.participant, offerID:"fixture", dataType:"language-use", title:"fixture", summary:"synthetic", consentEnvelope:e, session:session)
             #expect((market.lastConsentSubmissionID != nil) == (mode == "success"))
@@ -110,6 +140,7 @@ private final class ConsentFixtureProtocol: URLProtocol, @unchecked Sendable {
             let p=envelope?["payload"] ?? ""
             let raw=Data(base64Encoded:p.replacingOccurrences(of:"-",with:"+").replacingOccurrences(of:"_",with:"/")+String(repeating:"=",count:(4-p.count%4)%4)) ?? Data()
             json=["submission_id":String(repeating:"a",count:64),"request_sha256":SHA256.hash(data:raw).map{String(format:"%02x",$0)}.joined(),"status":"consented","payout_status":"unverified","contributor_obligation_cents":NSNull(),"withdrawal_available":false]
+            if mode == "numeric-boolean" {json["withdrawal_available"]=0}
             if mode == "echo" {json=["submission_id":"echo","payout_usd":999.0]}
             if mode == "wrong-hash" {json["request_sha256"]=String(repeating:"f",count:64)}
             if mode == "malformed" {json.removeValue(forKey:"payout_status")}

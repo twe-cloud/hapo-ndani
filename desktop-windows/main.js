@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const { spawn } = require('child_process');
 const https = require('https');
 const http = require('http');
+const { allowedRailRead } = require('./rail-policy');
 
 // ── Paths ──────────────────────────────────────────────────────────
 const NDANI_HOME = path.join(app.getPath('home'), '.ndani');
@@ -458,6 +459,8 @@ function fetchJSON(url, options = {}) {
 
 // ── IPC: Backend API proxy ─────────────────────────────────────────
 ipcMain.handle('api:fetch', async (_e, endpoint, options = {}) => {
+  if (!allowedRailRead(endpoint, options)) return { ok: false, error: 'consent_flow_unavailable',
+    detail: 'Secure per-offer consent is not available in this build. Nothing was submitted.' };
   if (!BACKEND_BASE_URL) return BACKEND_NOT_CONFIGURED;
   return fetchJSON(`${BACKEND_BASE_URL}${endpoint}`, options);
 });

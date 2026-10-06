@@ -51,7 +51,7 @@
         <div class="stat-card">
           <div class="stat-icon purple">&#9733;</div>
           <div class="card-title">Data Earnings</div>
-          <div class="card-value" id="stat-earnings">$0.00</div>
+          <div class="card-value" id="stat-earnings">Unverified</div>
           <div class="card-sub">lifetime earnings</div>
         </div>
         <div class="stat-card">
@@ -125,13 +125,13 @@
       <div class="grid-3 gap-24 mb-24">
         <div class="earnings-card" style="grid-column: span 2;">
           <div class="earnings-label">Your Total Earnings</div>
-          <div class="earnings-value" id="total-earnings">$0.00</div>
-          <div class="earnings-sub"><span id="total-offers-count">0</span> offers completed</div>
+          <div class="earnings-value" id="total-earnings">Unverified</div>
+          <div class="earnings-sub"><span id="total-offers-count">Unverified</span> offers completed</div>
         </div>
         <div class="stat-card">
           <div class="stat-icon teal">&#9670;</div>
           <div class="card-title">Available Balance</div>
-          <div class="card-value" id="available-balance">$0.00</div>
+          <div class="card-value" id="available-balance">Unverified</div>
           <button class="btn btn-sm btn-primary mt-16" id="payout-btn" onclick="requestPayout()" style="display:none">Request Payout</button>
           <div class="card-sub mt-16" id="payout-min-notice">Minimum $10.00 to withdraw</div>
         </div>
@@ -140,7 +140,7 @@
       <div class="section-header">
         <div>
           <div class="section-title">Available Offers</div>
-          <div class="section-sub">Buyers pay you for a summary you write yourself and choose to send. Only that text is sent — never your files, and never automatically. A submission is linked to your participant id, so it is not anonymous.</div>
+          <div class="section-sub">Discovery only. This build does not submit summaries or pay participants. Secure participant identity and per-offer consent are not connected. Your files are not uploaded.</div>
         </div>
         <button class="btn btn-sm" onclick="loadOffers()">Refresh</button>
       </div>
@@ -174,7 +174,7 @@
           <strong>Your control:</strong> Only the text you type above will be submitted. Ndani does NOT read your files, browsing history, or any local data to fill this in. You decide exactly what to share.
         </div>
 
-        <button class="btn btn-primary" onclick="submitOffer()">Submit Offer</button>
+        <button class="btn btn-primary" disabled title="Secure per-offer consent is not connected">Submit Offer</button>
       </div>
 
       <!-- Offer History -->
@@ -235,16 +235,16 @@
       <div class="grid-2 gap-24">
         <div class="card">
           <div class="card-header"><span class="card-title">Participant ID</span></div>
-          <div id="participant-status" style="margin-bottom:16px; font-size:0.9rem; color:var(--text-2);">Not set. The app is free — this is only needed if you use a rail that pays you.</div>
+          <div id="participant-status" style="margin-bottom:16px; font-size:0.9rem; color:var(--text-2);">Secure participant identity is not connected. Saved legacy values cannot authorize a sale.</div>
           <div class="form-group">
             <label class="form-label">Participant ID</label>
-            <input class="form-input" id="participant-id" placeholder="Issued by your rail, if you use one">
+            <input class="form-input" id="participant-id" disabled placeholder="Legacy identifier — cannot authorize a sale">
           </div>
           <div class="form-group">
             <label class="form-label">Signature</label>
-            <input class="form-input" id="participant-sig" placeholder="Signature, if your rail issues one">
+            <input class="form-input" id="participant-sig" disabled placeholder="Legacy value — not a per-offer signature">
           </div>
-          <button class="btn btn-primary btn-sm" onclick="saveParticipantID()">Save</button>
+          <button class="btn btn-primary btn-sm" disabled title="Secure participant identity is not connected">Save</button>
         </div>
 
         <div class="card">
