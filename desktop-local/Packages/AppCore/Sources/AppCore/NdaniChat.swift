@@ -359,40 +359,34 @@ public final class NdaniChatState {
         }
         messages.append((.user, prompt))
 
-        inferenceTask = Task { [weak self] in
+        inferenceTask = Task { @MainActor [weak self] in
             do {
                 let stream = try await engine.generate(messages: messages)
                 for try await token in stream {
                     guard !Task.isCancelled else { break }
-                    await MainActor.run {
-                        self?.streamingResponse += token
-                    }
+                    self?.streamingResponse += token
                 }
             } catch {
                 if !Task.isCancelled {
-                    await MainActor.run {
-                        if self?.streamingResponse.isEmpty == true {
-                            let message = "Local AI reset itself after a startup issue. Try once more, or reinstall the recommended AI from Home."
-                            self?.streamingResponse = message
-                            self?.recoveryMessage = message
-                        }
+                    if self?.streamingResponse.isEmpty == true {
+                        let message = "Local AI reset itself after a startup issue. Try once more, or reinstall the recommended AI from Home."
+                        self?.streamingResponse = message
+                        self?.recoveryMessage = message
                     }
                 }
             }
 
-            await MainActor.run {
-                guard let self else { return }
-                if !self.streamingResponse.isEmpty,
-                   let idx = self.conversations.firstIndex(where: { $0.id == self.activeConversationID }) {
-                    self.appendAssistantMessage(
-                        Self.sanitizedAssistantResponse(self.streamingResponse, userPrompt: prompt),
-                        to: idx
-                    )
-                }
-                self.streamingResponse = ""
-                self.isGenerating = false
-                self.inferenceTask = nil
+            guard let self else { return }
+            if !self.streamingResponse.isEmpty,
+               let idx = self.conversations.firstIndex(where: { $0.id == self.activeConversationID }) {
+                self.appendAssistantMessage(
+                    Self.sanitizedAssistantResponse(self.streamingResponse, userPrompt: prompt),
+                    to: idx
+                )
             }
+            self.streamingResponse = ""
+            self.isGenerating = false
+            self.inferenceTask = nil
         }
     }
 
