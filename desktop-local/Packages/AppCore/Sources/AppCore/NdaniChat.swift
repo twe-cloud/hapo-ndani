@@ -312,11 +312,11 @@ public final class NdaniChatState {
 
     private func startInference(prompt: String, fileContext: String?, folderContext: String? = nil, conversationIndex idx: Int) {
         let allHistory = conversations[idx].messages.dropLast()
-        let systemOverhead = Self.baseSystemPrompt.count
-            + (fileContext?.count ?? 0)
-            + (folderContext?.count ?? 0)
-            + (memoryProvider?()?.count ?? 0)
-            + prompt.count
+        let fileContextChars = fileContext?.count ?? 0
+        let folderContextChars = folderContext?.count ?? 0
+        let memoryContextChars = memoryProvider?()?.count ?? 0
+        let systemOverhead = Self.baseSystemPrompt.count + fileContextChars
+            + folderContextChars + memoryContextChars + prompt.count
         let historyBudgetChars = (Self.maxContextTokens - Self.reservedTokenBudget) * Self.estimatedCharsPerToken - systemOverhead
         let history = Self.trimHistory(Array(allHistory), maxChars: max(0, historyBudgetChars))
 
