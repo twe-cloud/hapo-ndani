@@ -316,51 +316,45 @@ public final class NdaniJournalState {
 
         messages.append((.user, "Prompt: \(entry.prompt)\n\nMy entry:\n\(entry.content)"))
 
-        reflectionTask = Task { [weak self] in
+        reflectionTask = Task { @MainActor [weak self] in
             do {
                 let stream = try await engine.generate(messages: messages)
                 for try await token in stream {
                     guard !Task.isCancelled else { break }
-                    await MainActor.run {
-                        self?.streamingReflection += token
-                    }
+                    self?.streamingReflection += token
                 }
             } catch {
                 if !Task.isCancelled {
-                    await MainActor.run {
-                        self?.inferenceEngine = nil
-                        if self?.streamingReflection.isEmpty == true {
-                            let message = "Local AI reset itself after a startup issue. Your journal entry stayed saved."
-                            self?.streamingReflection = message
-                            self?.recoveryMessage = message
-                        }
+                    self?.inferenceEngine = nil
+                    if self?.streamingReflection.isEmpty == true {
+                        let message = "Local AI reset itself after a startup issue. Your journal entry stayed saved."
+                        self?.streamingReflection = message
+                        self?.recoveryMessage = message
                     }
                 }
             }
 
-            await MainActor.run {
-                guard let self else { return }
-                let reflection = self.streamingReflection
-                if !reflection.isEmpty,
-                   let idx = self.entries.firstIndex(where: { $0.id == self.activeEntryID }) {
-                    self.entries[idx].aiReflection = reflection
-                    self.entries[idx].updatedAt = Date()
-                    self.trySave(self.entries[idx])
+            guard let self else { return }
+            let reflection = self.streamingReflection
+            if !reflection.isEmpty,
+               let idx = self.entries.firstIndex(where: { $0.id == self.activeEntryID }) {
+                self.entries[idx].aiReflection = reflection
+                self.entries[idx].updatedAt = Date()
+                self.trySave(self.entries[idx])
 
-                    // Extract memories from this journal entry
-                    if let memoryState = self.memoryState, let engine = self.inferenceEngine {
-                        memoryState.extractMemory(
-                            journalContent: self.entries[idx].content,
-                            journalPrompt: self.entries[idx].prompt,
-                            reflection: reflection,
-                            engine: engine
-                        )
-                    }
+                // Extract memories from this journal entry
+                if let memoryState = self.memoryState, let engine = self.inferenceEngine {
+                    memoryState.extractMemory(
+                        journalContent: self.entries[idx].content,
+                        journalPrompt: self.entries[idx].prompt,
+                        reflection: reflection,
+                        engine: engine
+                    )
                 }
-                self.streamingReflection = ""
-                self.isReflecting = false
-                self.reflectionTask = nil
             }
+            self.streamingReflection = ""
+            self.isReflecting = false
+            self.reflectionTask = nil
         }
     }
 
