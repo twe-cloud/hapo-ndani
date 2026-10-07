@@ -6,14 +6,18 @@ import AppInference
 
 @main
 struct NativeMacOSUtilityDocumentStarterApp: App {
-    @State private var state = NdaniDesktopState(
-        allowedFolders: NdaniDesktopState.loadAllowedFolders(),
-        localReadLedger: NdaniDesktopState.loadLocalReadLedger()
-    )
+    @State private var state: NdaniDesktopState
     @State private var chatState = NdaniChatState()
     @State private var journalState = NdaniJournalState()
     @State private var memoryState = NdaniMemoryState()
     @State private var selectedTab: AppTab = .dashboard
+
+    init() {
+        _state = State(initialValue: NdaniDesktopState(
+            allowedFolders: NdaniDesktopState.loadAllowedFolders(),
+            localReadLedger: NdaniDesktopState.loadLocalReadLedger()
+        ))
+    }
 
     enum AppTab: String {
         case dashboard
