@@ -5,7 +5,7 @@ public struct NdaniMobileRootView: View {
     @State private var journalState = NdaniJournalState()
     @State private var chatState = NdaniChatState()
     @State private var memoryState = NdaniMemoryState()
-    @State private var desktopState = NdaniDesktopState()
+    @State private var desktopState: NdaniDesktopState
     @State private var selectedTab: MobileTab = .home
     @State private var recoveryNotice: MobileRecoveryNotice?
     @Environment(\.scenePhase) private var scenePhase
@@ -19,6 +19,7 @@ public struct NdaniMobileRootView: View {
     ) {
         self.capability = capability
         self.inferenceEngineFactory = inferenceEngineFactory
+        _desktopState = State(initialValue: NdaniDesktopState())
     }
 
     public var body: some View {
